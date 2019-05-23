@@ -7,6 +7,10 @@ var {User} = require('./models/user');
 
 var app = express();
 
+// var text = 'nothing';
+//
+// Todo.find({text}).then((todos) => console.log(todos));
+
 app.use(bodyParser.json());
 
 app.post('/todos', (req, res) => {
