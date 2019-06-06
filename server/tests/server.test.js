@@ -10,7 +10,9 @@ const todos = [{
   text: 'First test todo'
 }, {
   _id: new ObjectID(),
-  text: 'Second test todo'
+  text: 'Second test todo',
+  completed: true,
+  completedAt: 333
 }];
 
 beforeEach((done) => {
@@ -79,31 +81,30 @@ describe('GET /todos/:id', () => {
       .get(`/todos/${todos[0]._id.toHexString()}`)
       .expect(200)
       .expect((res) => {
-        expect(res.body.todo.text).toBe(todos[0].text)
+        expect(res.body.todo.text).toBe(todos[0].text);
       })
       .end(done);
-  })
+  });
 
-  it('should return a 404 if todo not found', (done) => {
-
-var hexId = new ObjectID().toHexString();
+  it('should return 404 if todo not found', (done) => {
+    var hexId = new ObjectID().toHexString();
 
     request(app)
       .get(`/todos/${hexId}`)
       .expect(404)
       .end(done);
-  })
+  });
 
-  it('should return 404 for non-object IDs', (done) => {
+  it('should return 404 for non-object Ids', (done) => {
     request(app)
-      .get(`/todos/123`)
+      .get('/todos/123abc')
       .expect(404)
-      .end(done)
-  })
-})
+      .end(done);
+  });
+});
 
 describe('DELETE /todos/:id', () => {
-  it('should delete todos by id', (done) => {
+  it('should remove a todo', (done) => {
     var hexId = todos[1]._id.toHexString();
 
     request(app)
@@ -113,17 +114,16 @@ describe('DELETE /todos/:id', () => {
         expect(res.body.todo._id).toBe(hexId);
       })
       .end((err, res) => {
-         if(err) {
-           return done(err)
-         };
+        if (err) {
+          return done(err);
+        }
 
-         Todo.findById(hexId).then((result) => {
-           expect(result).toBeNull();
-           done()
-         }).catch((e) => done(e));
-       });
+        Todo.findById(hexId).then((todo) => {
+          expect(todo).toBeNull();
+          done();
+        }).catch((e) => done(e));
+      });
   });
-});
 
   it('should return 404 if todo not found', (done) => {
     var hexId = new ObjectID().toHexString();
@@ -134,10 +134,50 @@ describe('DELETE /todos/:id', () => {
       .end(done);
   });
 
-  it('should return 404 if object id in not valid', (done) => {
- request(app)
-    .delete(`/todos/123`)
-    .expect(404)
-    .end(done)
+  it('should return 404 if object id is invalid', (done) => {
+    request(app)
+      .delete('/todos/123abc')
+      .expect(404)
+      .end(done);
   });
-// })
+});
+
+describe('PATCH /todos/:id', () => {
+  it('should update the todo', (done) => {
+    var hexId = todos[0]._id.toHexString();
+    var text = 'This should be the new text';
+
+    request(app)
+      .patch(`/todos/${hexId}`)
+      .send({
+        completed: true,
+        text
+      })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.todo.text).toBe(text);
+        expect(res.body.todo.completed).toBe(true);
+        expect(typeof res.body.todo.completedAt).toBe('number')
+      })
+      .end(done);
+  });
+
+  it('should clear completedAt when todo is not completed', (done) => {
+    var hexId = todos[1]._id.toHexString();
+    var text = 'This should be the new text!!';
+
+    request(app)
+      .patch(`/todos/${hexId}`)
+      .send({
+        completed: false,
+        text
+      })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.todo.text).toBe(text);
+        expect(res.body.todo.completed).toBe(false);
+        expect(typeof res.body.comletedAt).toBe('undefined');
+      })
+      .end(done);
+  });
+});
